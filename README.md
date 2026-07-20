@@ -91,11 +91,11 @@ The App lets you know when your battery has fallen below 20% or higher than 80% 
 
 Right click it to refresh and show a notification:
 
-![right_click](images/right_click.png)
+![light_click](images/right_click.png)
 
 Left click it to show a dropdown meny with the `Refresh` and `Exit` options.
 
-![left_click](images/right_click.png)
+![left_click](images/left_click.png)
 
 
 # Known limitations
