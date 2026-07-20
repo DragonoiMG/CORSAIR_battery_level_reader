@@ -99,7 +99,7 @@ def load_cue_dll() -> ctypes.CDLL:
 
     Raises a RuntimeError with actionable debug text on failure.
     """
-    candidates = [r"C:\Users\luism\Desktop\Cosair_Baterry_Level_Reader\iCUESDK\redist\x64\iCUESDK.x64_2019.dll"]
+    candidates = [r"\path\to\your\x64\iCUESDK.x64_2019.dll"]
 
     # 1) Allow user to provide an explicit DLL path via env var
     env_path = os.environ.get("CUE_SDK_DLL")
@@ -178,7 +178,7 @@ def load_cue_dll() -> ctypes.CDLL:
         "",
         f"Your Python process is: {bitness}. Make sure you use the matching iCUE DLL (x64 vs x86).",
         "Suggested fixes:",
-        "  * Set the exact DLL path via environment variable CUE_SDK_DLL, e.g.:",
+        "  * Set the exact path on candidates variable or Set the exact DLL path via environment variable CUE_SDK_DLL, e.g.:",
         r'      set CUE_SDK_DLL=C:\path\to\iCUESDK.x64_2019.dll',
         "  * Or copy the correct SDK DLL into the same folder as your script.",
         "  * Install the Microsoft Visual C++ Redistributable (2015-2019/2022) x64 if missing.",
@@ -211,7 +211,7 @@ class CorsairSessionStateChanged(ctypes.Structure):
 
 
 class CorsairDeviceInfoStruct(ctypes.Structure):
-    # From SDK header: all fields are char arrays (UTF-8 encoded), not wchar!
+    # From SDK header: all fields are char arrays (UTF-8 encoded)
     _fields_ = [
         ("type", ctypes.c_int),                           # CorsairDeviceType (enum = int)
         ("id", ctypes.c_char * CORSAIR_STRING_SIZE_M),    # CorsairDeviceId typedef
@@ -401,7 +401,7 @@ class CueSdkClient:
             if self._session_state != CSS_Connected:
                 raise CUEError("Not connected to iCUE. Call connect() first.")
         
-        # CRITICAL FIX: Create a proper CorsairDeviceFilter struct
+        # Create a proper CorsairDeviceFilter struct
         # Use CDT_All (0xFFFFFFFF) to get all device types
         device_filter = CorsairDeviceFilter(deviceTypeMask=CDT_All)
         

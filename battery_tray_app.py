@@ -61,7 +61,7 @@ class BatteryTrayApp:
         
         device_name = self.devices[0].model if self.devices else "Device"
         
-        # Check LOW threshold (<=20%)
+        # Check LOW threshold
         if battery_level <= self.low_threshold and not self.notified_low:
             self.icon.notify(
                 title="⚠️ Low Battery Warning",
@@ -71,7 +71,7 @@ class BatteryTrayApp:
             self.notified_high = False  # Reset high notification
             LOG.warning(f"Low battery notification sent: {battery_level}%")
         
-        # Check HIGH threshold (>=80%)
+        # Check HIGH threshold
         elif battery_level >= self.high_threshold and not self.notified_high:
             self.icon.notify(
                 title="🔋 Battery Charged",
@@ -128,15 +128,46 @@ class BatteryTrayApp:
                     break
                 time.sleep(1)
 
+    def on_refresh(self, icon, item):
+        """Handle refresh menu item - update battery and show notification."""
+        try:
+            LOG.info("Manual refresh triggered")
+            
+            # Get fresh battery data
+            battery_info = self.get_battery_info()
+            
+            if battery_info and len(battery_info) > 0:
+                # Store old value
+                self.previous_battery = self.current_battery
+                
+                # Update current battery
+                self.current_battery = battery_info[0]['battery']
+                LOG.info(f"Manual refresh: {self.current_battery}%")
+                
+                # Check thresholds if battery changed
+                if self.previous_battery != self.current_battery:
+                    self.check_battery_thresholds(self.current_battery)
+                
+                # Update icon immediately
+                if self.icon:
+                    self.icon.icon = create_battery_icon(self.current_battery)
+                    device_name = self.devices[0].model if self.devices else "Device"
+                    self.icon.title = f"{device_name}: {self.current_battery}%"
+                
+                # Always show status notification when clicked
+                message = "\n".join([f"{d['model']}: {d['battery']}%" for d in battery_info])
+                icon.notify("🔋 Battery Status", message)
+                
+            else:
+                icon.notify("Battery Status", "No wireless devices found")
+                
+        except Exception as e:
+            LOG.error(f"Error during manual refresh: {e}")
+            icon.notify("Error", "Failed to refresh battery info")
+
     def on_clicked(self, icon, item):
-        """Handle icon click - show notification with details."""
-        battery_info = self.get_battery_info()
-        if battery_info:
-            self.update_battery()
-            message = "\n".join([f"{d['model']}: {d['battery']}%" for d in battery_info])
-            icon.notify("Battery Status", message)
-        else:
-            icon.notify("Battery Status", "No wireless devices found")
+        """Handle direct icon click (left click on icon itself)."""
+        self.on_refresh(icon, item)
 
     def on_quit(self, icon, item):
         """Handle quit menu item."""
@@ -154,9 +185,9 @@ class BatteryTrayApp:
         # Get initial battery level
         self.update_battery()
 
-        # Create system tray icon
+        # Create system tray icon with click handler
         menu = pystray.Menu(
-            pystray.MenuItem("Refresh", self.on_clicked, default=True),
+            pystray.MenuItem("Refresh", self.on_refresh, default=True),
             pystray.MenuItem("Quit", self.on_quit)
         )
 
@@ -164,7 +195,8 @@ class BatteryTrayApp:
             "corsair_battery",
             create_battery_icon(self.current_battery),
             "Corsair Battery",
-            menu
+            menu,
+            on_click=self.on_clicked  # Handle left click on icon
         )
 
         # Start update thread
